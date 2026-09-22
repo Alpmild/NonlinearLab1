@@ -1,6 +1,6 @@
 import numpy as np
 
-NAME_ERROR = "Ошибка RK4"
+NAME_ERROR = "Ошибка RK4 ‖u_h − u_{h/2}‖"
 
 
 def rk4(f, u0, t0, t1, h):
