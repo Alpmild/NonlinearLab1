@@ -1,11 +1,12 @@
-from Euler import euler as method
-from Euler import NAME_ERROR
+from RK4 import rk4 as method
+from RK4 import NAME_ERROR
 from RK4 import rk4
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 T = 15
+T_ERR = 2.0
 
 
 def f(u):
@@ -52,20 +53,28 @@ if __name__ == '__main__':
     plt.tight_layout()
     plt.show()
 
-    # Ошибка и порядок
+    # Ошибка и порядок (на отрезке T_ERR)
+    # Сетка шагов с делением пополам: каждый следующий шаг — h/2 предыдущего
+    hs = 0.1 / 2.0 ** np.arange(6)
 
-    hs = np.array([0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001])
     if method != rk4:
-        u_exact = rk4(f, u0, 0.0, T, 1e-5)[1][-1]
-
-        errs = np.array([np.linalg.norm(method(f, u0, 0.0, T, h)[1][-1] - u_exact, np.inf)
+        u_exact = rk4(f, u0, 0.0, T_ERR, 1e-5)[1][-1]
+        errs = np.array([np.linalg.norm(method(f, u0, 0.0, T_ERR, h)[1][-1] - u_exact, np.inf)
                          for h in hs])
     else:
-        U_h = [rk4(f, u0, 0.0, T, h)[1][-1] for h in hs]
-        U_h2 = [rk4(f, u0, 0.0, T, h / 2)[1][-1] for h in hs]
+        U_h = [rk4(f, u0, 0.0, T_ERR, h)[1][-1] for h in hs]
+        U_h2 = [rk4(f, u0, 0.0, T_ERR, h / 2)[1][-1] for h in hs]
         errs = np.array([np.linalg.norm(a - b, np.inf) for a, b in zip(U_h, U_h2)])
 
-    p_fit = np.polyfit(np.log(hs), np.log(errs), 1)[0]
+    # Порядок метода по формуле Рунге: p = log2(E(h) / E(h/2)) для каждой пары соседних шагов
+    p_pairs = np.log2(errs[:-1] / errs[1:])
+    p_fit = p_pairs.mean()
+
+    print("h          E(h)        p = log2(E(h)/E(h/2))")
+    for i, h in enumerate(hs):
+        p_str = f"{p_pairs[i]:.4f}" if i < len(p_pairs) else "  ---"
+        print(f"{h:<10.5f} {errs[i]:>11.3e}   {p_str}")
+    print(f"\nПорядок метода (среднее по парам): {p_fit:.4f}")
 
     fig, ax = plt.subplots(figsize=(8, 6))
     ax.loglog(hs, errs, 'o-', color='darkred', label=NAME_ERROR)
@@ -77,5 +86,3 @@ if __name__ == '__main__':
     ax.grid(True, which='both', ls=':')
     ax.legend()
     plt.show()
-
-    print(f"Порядок метода: {p_fit:.3f}")

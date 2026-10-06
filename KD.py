@@ -3,7 +3,10 @@ import numpy as np
 NAME_ERROR = 'Ошибка KD'
 
 
-def kd(f, u0, t0, t1, h, s=0.3):
+def kd(f, u0, t0, t1, h, s=0.5):
+    #
+    #
+
     u0 = np.array(u0)
 
     h1 = h * s
