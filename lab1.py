@@ -14,6 +14,17 @@ def f(u):
     return np.array([y * z, x - y, 1 - x * y])
 
 
+def reference(u0, t_end, h):
+    if method != rk4:
+        return rk4(f, u0, 0.0, t_end, h)[1]
+    return rk4(f, u0, 0.0, t_end, h / 2)[1][::2]
+
+
+def error_curve(u0, t_end, h):
+    t_h, u_h = method(f, u0, 0.0, t_end, h)
+    return t_h, np.linalg.norm(u_h - reference(u0, t_end, h), np.inf, axis=1)
+
+
 if __name__ == '__main__':
 
     # Фазовый портрет
@@ -53,29 +64,35 @@ if __name__ == '__main__':
     plt.tight_layout()
     plt.show()
 
-    # Ошибка и порядок (на отрезке T_ERR)
-    # Сетка шагов с делением пополам: каждый следующий шаг — h/2 предыдущего
     hs = 0.1 / 2.0 ** np.arange(6)
 
-    if method != rk4:
-        u_exact = rk4(f, u0, 0.0, T_ERR, 1e-5)[1][-1]
-        errs = np.array([np.linalg.norm(method(f, u0, 0.0, T_ERR, h)[1][-1] - u_exact, np.inf)
-                         for h in hs])
-    else:
-        U_h = [rk4(f, u0, 0.0, T_ERR, h)[1][-1] for h in hs]
-        U_h2 = [rk4(f, u0, 0.0, T_ERR, h / 2)[1][-1] for h in hs]
-        errs = np.array([np.linalg.norm(a - b, np.inf) for a, b in zip(U_h, U_h2)])
+    # График ошибки от времени
+    fig_e, ax_e = plt.subplots(figsize=(8, 6))
+    for h in hs[:4]:
+        t_h, e_h = error_curve(u0, T, h)
+        ax_e.semilogy(t_h[1:], e_h[1:], lw=1.2, label=f'h = {h:.5f}')
+    ax_e.set_xlabel('t')
+    ax_e.set_ylabel('Ошибка')
+    ax_e.set_title(f'{NAME_ERROR}: зависимость от времени')
+    ax_e.grid(True, which='both', ls=':')
+    ax_e.legend()
+    plt.show()
 
-    # Порядок метода по формуле Рунге: p = log2(E(h) / E(h/2)) для каждой пары соседних шагов
+    # Порядок метода на отрезке [0, T_ERR]
+    errs = np.array([error_curve(u0, T_ERR, h)[1][-1] for h in hs])
+
+    # Порядок метода
     p_pairs = np.log2(errs[:-1] / errs[1:])
     p_fit = p_pairs.mean()
 
+    print(f"Оценка порядка на отрезке")
     print("h          E(h)        p = log2(E(h)/E(h/2))")
     for i, h in enumerate(hs):
         p_str = f"{p_pairs[i]:.4f}" if i < len(p_pairs) else "  ---"
         print(f"{h:<10.5f} {errs[i]:>11.3e}   {p_str}")
     print(f"\nПорядок метода (среднее по парам): {p_fit:.4f}")
 
+    # График ошибки от шага
     fig, ax = plt.subplots(figsize=(8, 6))
     ax.loglog(hs, errs, 'o-', color='darkred', label=NAME_ERROR)
     ax.loglog(hs, errs[0] * (hs / hs[0]) ** p_fit, '--', color='gray',
@@ -83,6 +100,7 @@ if __name__ == '__main__':
 
     ax.set_xlabel('Шаг h')
     ax.set_ylabel('Глобальная ошибка')
+    ax.set_title('Порядок метода')
     ax.grid(True, which='both', ls=':')
     ax.legend()
     plt.show()
