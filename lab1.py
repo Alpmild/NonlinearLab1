@@ -69,7 +69,7 @@ if __name__ == '__main__':
     # График ошибки от времени
     fig_e, ax_e = plt.subplots(figsize=(8, 6))
     for h in hs[:4]:
-        t_h, e_h = error_curve(u0, T, h)
+        t_h, e_h = error_curve(u0, T_ERR, h)
         ax_e.semilogy(t_h[1:], e_h[1:], lw=1.2, label=f'h = {h:.5f}')
     ax_e.set_xlabel('t')
     ax_e.set_ylabel('Ошибка')
